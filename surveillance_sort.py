@@ -1,7 +1,7 @@
 
 ####### 2/12/26 TIN ###################
 """
-1. Write the path of the folder within the external hard drive that contains unsorted video files here:
+1. Write the name of the folder within the external hard drive that contains unsorted video files here:
 """ 
 
 to_sort = "/2026-2-2" 
@@ -20,12 +20,8 @@ folders for each date and automatically move videos into those folders.
 import shutil
 import os
 
-# Relative path of output folder; 
-# # inside this folder a new folder will be created for each date
+# Relative path of output folder
 output = "/output"
-
-for filename in os.listdir(os.getcwd()+to_sort):
-    print(filename)
 
 # Go through all of the unsorted files 
 for filename in os.listdir(os.getcwd()+to_sort):
@@ -45,3 +41,4 @@ for filename in os.listdir(os.getcwd()+to_sort):
 
     # Move the file to the new folder & print the new path of the file
     print(shutil.move(os.getcwd()+to_sort+"/"+filename, newpath+"/"+filename))
+
