@@ -1,0 +1,221 @@
+---
+title: "BORIS aggregated behavior reformatting"
+author: "Tobias I. Nguyen"
+date: "2025-11-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(rstudioapi)
+```
+
+# For surveillance data
+## Input filename
+Keep csv files in a subfolder called "/boris_data_files"
+```{r}
+filename <- "2025-07-09 LC 730 through 1100"
+
+
+# set working directory to folder with this script
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+src <- paste(getwd(),"/boris_data_files/", filename, ".csv", sep="")
+    
+```
+
+
+```{r eval = T, include = F}
+date.m.dd.yyyy <- function(x){
+    paste(
+        # M with no leading 0
+        case_when(
+            substring(x, 6,6) == 0 ~  substring(x, 7,7),
+            T ~ substring(x,6,7)
+        ),
+        substring(x, 9,10), #DD
+        substring(x, 0, 4), #YYYY  
+        sep = "/"
+    )
+}
+
+format.boris.data <- function(df){
+    df %>% 
+        # Rename columns
+        rename(
+            Actor = Subject,
+            Receiver = Modifier..1, 
+            Duration = Duration..s.
+        ) %>% 
+        mutate(
+            # Turn comments into 1 column
+            Notes = 
+                case_when(
+                    # if there are 2 comments, combine them
+                    Comment.start !="" & Comment.stop !="" ~
+                        paste(Comment.start,Comment.stop, sep=". "),
+                    # if there is 1 comment, use that
+                    Comment.start !="" ~ Comment.start,
+                    Comment.stop !="" ~ Comment.stop,
+                    TRUE ~ ""
+                ),
+            
+            #Reformat video date & completion date to remove timestamps
+            #Date format: M/DD/YYYY
+            Video.date = date.m.dd.yyyy(Video.date),
+            Date.scoring.was.completed = date.m.dd.yyyy(Date.scoring.was.completed),
+            
+            #Reformat start and end timestamps into 3 columns
+            Start.hour = floor(Start..s. / 3600),
+            Start.minute = floor((Start..s. %% 3600) / 60),
+            Start.second = Start..s. %% 60,
+            
+            End.hour = floor(Stop..s. / 3600),
+            End.minute = floor((Stop..s. %% 3600) / 60),
+            End.second = Stop..s. %% 60
+            
+        ) %>% 
+        select(
+            Actor,
+            Receiver,
+            Behavior,
+            Video.date,
+            Start.hour,
+            Start.minute,
+            Start.second,
+            End.hour,
+            End.minute,
+            End.second,
+            Camera,
+            Scored.by,
+            Date.scoring.was.completed,
+            Notes
+            
+        )
+    #(!c(Comment.start, Comment.stop))
+}
+
+export.reformatted.data <- function(df){
+    path <- paste(
+        sep="", 
+        getwd(), 
+        "/output/", 
+        filename, 
+        " - CONVERTED - ",
+        # add time of conversion - to prevent overwriting a file 
+        gsub(":","-", Sys.time() %>% format(format = "%R")),
+        ".csv"
+        )
+    
+    write.csv(df, path)
+}
+```
+
+
+Format & Export - into a subfolder titled "/output"
+```{r}
+data.raw <- read.csv(src)
+
+data <- format.boris.data(data.raw)
+
+data %>% export.reformatted.data()
+
+```
+
+## Functions: 
+- date.m.dd.yyyy - formats BORIS style timestamps into M/DD/YYYY
+- format.boris.data(df)
+- export.reformatted.data(df) - takes the output of format.boris.data
+```{r eval = F}
+
+date.m.dd.yyyy <- function(x){
+    paste(
+        # M with no leading 0
+        case_when(
+            substring(x, 6,6) == 0 ~  substring(x, 7,7),
+            T ~ substring(x,6,7)
+        ),
+        substring(x, 9,10), #DD
+        substring(x, 0, 4), #YYYY  
+        sep = "/"
+    )
+}
+
+format.boris.data <- function(df){
+    df %>% 
+        # Rename columns
+        rename(
+            Actor = Subject,
+            Receiver = Modifier..1, 
+            Duration = Duration..s., 
+            Video.date = Observation.date
+        ) %>% 
+        mutate(
+            # Turn comments into 1 column
+            Notes = 
+                case_when(
+                    # if there are 2 comments, combine them
+                    Comment.start !="" & Comment.stop !="" ~
+                        paste(Comment.start,Comment.stop, sep=". "),
+                    # if there is 1 comment, use that
+                    Comment.start !="" ~ Comment.start,
+                    Comment.stop !="" ~ Comment.stop,
+                    TRUE ~ ""
+                ),
+            
+            
+            #Reformat video date & completion date to remove timestamps
+            #Date format: M/DD/YYYY
+            Video.date = date.m.dd.yyyy(Video.date),
+            Date.scoring.was.completed = date.m.dd.yyyy(Date.scoring.was.completed),
+            
+            
+            #Reformat start and end timestamps into 3 columns
+            Start.hour = floor(Start..s. / 3600),
+            Start.minute = floor((Start..s. %% 3600) / 60),
+            Start.second = Start..s. %% 60,
+            
+            End.hour = floor(Stop..s. / 3600),
+            End.minute = floor((Stop..s. %% 3600) / 60),
+            End.second = Stop..s. %% 60
+            
+        ) %>% 
+        select(
+            Actor,
+            Receiver,
+            Behavior,
+            Video.date,
+            Start.hour,
+            Start.minute,
+            Start.second,
+            End.hour,
+            End.minute,
+            End.second,
+            Camera,
+            Scored.by,
+            Date.scoring.was.completed,
+            Notes
+            
+        )
+    #(!c(Comment.start, Comment.stop))
+}
+
+export.reformatted.data <- function(df){
+    path <- paste(
+        sep="", 
+        getwd(), 
+        "/output/", 
+        filename, 
+        " - CONVERTED at ",
+        # add time of conversion - to prevent overwriting a file 
+        gsub(":","-", Sys.time() %>% format(format = "%R")),
+        ".csv"
+        )
+    
+    write.csv(df, path)
+}
+```
+
+
