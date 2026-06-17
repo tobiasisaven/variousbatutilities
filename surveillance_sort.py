@@ -1,7 +1,8 @@
 
 ####### 6/17/26 Tobias N ###################
 """
-1. Put this python file (surveillance_sort.py) in the auto-generated folder called "N863A6" (or change the 'dir' path below)
+1. Put this python file (surveillance_sort.py) in the auto-generated folder called "N863A6" 
+(or change the 'dir' path below)
 
 2. Rename the folder of raw videos you want to sort "to_sort"
 
